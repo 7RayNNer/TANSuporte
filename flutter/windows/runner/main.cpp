@@ -89,6 +89,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     }
   }
 
+  // TAN! Suporte: a janela principal leva o nome de exibicao (ver getWindowName em common.dart).
+  if (app_name == L"TANSuporte") {
+    app_name = L"TAN! Suporte";
+  }
+
   // Uri links dispatch
   HWND hwnd = ::FindWindowW(getWindowClassName(), app_name.c_str());
   if (hwnd != NULL) {
