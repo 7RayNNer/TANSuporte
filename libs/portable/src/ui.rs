@@ -5,8 +5,9 @@ use std::cell::RefCell;
 const GIF_DATA: &[u8] = include_bytes!("./res/spin.gif");
 const LABEL_DATA: &[u8] = include_bytes!("./res/label.png");
 const GIF_SIZE: i32 = 32;
-const BG_COLOR: [u8; 3] = [90, 90, 120];
-const BORDER_COLOR: [u8; 3] = [40, 40, 40];
+// TAN! Suporte: azul da marca e borda no azul escuro da barra do TAN! Web.
+const BG_COLOR: [u8; 3] = [31, 59, 115];
+const BORDER_COLOR: [u8; 3] = [25, 48, 95];
 const GIF_DELAY: u64 = 30;
 
 #[derive(Default)]
@@ -162,8 +163,8 @@ mod basic_app_ui {
                 .margin([0, 0, 0, 0])
                 .max_column(Some(col_cnt as _))
                 .max_row(Some(row_cnt as _))
-                .child_item(GridLayoutItem::new(&ui.gif_image, 2, 1, 1, 1))
-                .child_item(GridLayoutItem::new(&ui.label_image, 3, 1, 3, 1))
+                .child_item(GridLayoutItem::new(&ui.gif_image, 1, 1, 1, 1))
+                .child_item(GridLayoutItem::new(&ui.label_image, 2, 1, 5, 1))
                 .build(&ui.inner_layout)?;
 
             // Events
