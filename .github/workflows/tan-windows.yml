@@ -1,5 +1,5 @@
 # TAN! Suporte: build do Windows x64 (Flutter), derivado do job build-for-windows-flutter
-# de flutter-build.yml. Gera o exe portatil/instalador TAN-Suporte-<versao>.exe.
+# de flutter-build.yml. Gera TAN-Suporte-<versao>.exe (cliente) e TAN-Suporte-Tecnico-<versao>.exe.
 #
 # Servidor proprio (opcional): em Settings > Secrets and variables > Actions > Variables, crie
 #   RENDEZVOUS_SERVER  ex.: suporte.tan.com.br  (hbbs)
@@ -28,14 +28,23 @@ jobs:
     uses: ./.github/workflows/bridge.yml
 
   build-windows:
-    name: Windows x64
+    name: Windows x64 (${{ matrix.variante.nome }})
     needs: [generate-bridge]
     runs-on: windows-2022
     permissions:
       contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        variante:
+          # cliente: so recebe conexao, tela simples (tan_cliente_home.dart)
+          - { nome: cliente, tan-cliente: "1", exe: TAN-Suporte }
+          # tecnico: app completo, para quem acessa
+          - { nome: tecnico, tan-cliente: "", exe: TAN-Suporte-Tecnico }
     env:
       TARGET: x86_64-pc-windows-msvc
       VCPKG_TRIPLET: x64-windows-static
+      TAN_CLIENTE: ${{ matrix.variante.tan-cliente }}
     steps:
       - name: Export GitHub Actions cache environment variables
         uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
@@ -95,7 +104,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
-          prefix-key: windows-2022
+          prefix-key: windows-2022-${{ matrix.variante.nome }}
 
       - name: Setup vcpkg with Github Actions binary cache
         uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11
@@ -132,7 +141,7 @@ jobs:
       - name: Upload pasta (sem empacotar)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: tan-suporte-windows-x64-pasta
+          name: tan-suporte-${{ matrix.variante.nome }}-x64-pasta
           path: rustdesk
 
       - name: Build self-extracted executable
@@ -144,16 +153,16 @@ jobs:
           python3 ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/rustdesk.exe
           popd
           mkdir -p ./SignOutput
-          mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/TAN-Suporte-${{ env.VERSION }}.exe
+          mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/${{ matrix.variante.exe }}-${{ env.VERSION }}.exe
 
       - name: Upload exe
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: tan-suporte-windows-x64
-          path: ./SignOutput/TAN-Suporte-*.exe
+          name: tan-suporte-${{ matrix.variante.nome }}-x64
+          path: ./SignOutput/*.exe
 
       - name: Publish Release
         if: startsWith(github.ref, 'refs/tags/tan-v')
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         with:
-          files: ./SignOutput/TAN-Suporte-*.exe
+          files: ./SignOutput/*.exe

@@ -79,7 +79,7 @@ lazy_static::lazy_static! {
     pub static ref OVERWRITE_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref DEFAULT_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref OVERWRITE_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
-    pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
+    pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(tan_hard_settings());
     pub static ref BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
 }
 
@@ -115,14 +115,14 @@ const CHARS: &[char] = &[
 ];
 
 // TAN! Suporte: servidor e chave fixados no build (variaveis RENDEZVOUS_SERVER e RS_PUB_KEY).
-// Sem elas, cai no servidor publico do RustDesk.
+// Vazias ou ausentes, cai no servidor publico do RustDesk.
 pub const RENDEZVOUS_SERVERS: &[&str] = &[match option_env!("RENDEZVOUS_SERVER") {
-    Some(s) => s,
-    None => "rs-ny.rustdesk.com",
+    Some(s) if !s.is_empty() => s,
+    _ => "rs-ny.rustdesk.com",
 }];
 pub const RS_PUB_KEY: &str = match option_env!("RS_PUB_KEY") {
-    Some(s) => s,
-    None => "OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw=",
+    Some(s) if !s.is_empty() => s,
+    _ => "OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw=",
 };
 
 pub const RENDEZVOUS_PORT: i32 = 21116;
@@ -3685,4 +3685,13 @@ mod tests {
         let non_service_user = Config::ipc_path_for_uid(USER_UID, "");
         assert_ne!(non_service_root, non_service_user);
     }
+}
+
+// TAN! Suporte: com TAN_CLIENTE definido no build, gera o executavel do cliente (so recebe conexao).
+fn tan_hard_settings() -> HashMap<String, String> {
+    let mut settings = HashMap::new();
+    if matches!(option_env!("TAN_CLIENTE"), Some(v) if !v.is_empty()) {
+        settings.insert("conn-type".to_owned(), "incoming".to_owned());
+    }
+    settings
 }
