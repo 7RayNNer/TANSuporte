@@ -5,8 +5,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_hbb/common/widgets/connection_page_title.dart';
 import 'package:flutter_hbb/consts.dart';
+import 'package:flutter_hbb/desktop/pages/tan_comum.dart';
 import 'package:flutter_hbb/desktop/widgets/popup_menu.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:get/get.dart';
@@ -303,24 +303,15 @@ class _ConnectionPageState extends State<ConnectionPage>
 
   @override
   Widget build(BuildContext context) {
-    final isOutgoingOnly = bind.isOutgoingOnly();
+    // TAN! Suporte: o estado do servidor fica no cabecalho (tan_tecnico_home.dart).
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-            child: Column(
-          children: [
-            Row(
-              children: [
-                Flexible(child: _buildRemoteIDTextField(context)),
-              ],
-            ).marginOnly(top: 22),
-            SizedBox(height: 12),
-            Divider().paddingOnly(right: 12),
-            Expanded(child: PeerTabPage()),
-          ],
-        ).paddingOnly(left: 12.0)),
-        if (!isOutgoingOnly) const Divider(height: 1),
-        if (!isOutgoingOnly) OnlineStatusWidget()
+        _buildRemoteIDTextField(context),
+        const SizedBox(height: 22),
+        const TanTitulo('Recentes e favoritos'),
+        const SizedBox(height: 6),
+        Expanded(child: PeerTabPage()),
       ],
     );
   }
@@ -343,16 +334,15 @@ class _ConnectionPageState extends State<ConnectionPage>
   /// UI for the remote ID TextField.
   /// Search for a peer.
   Widget _buildRemoteIDTextField(BuildContext context) {
+    final tan = TanCores.of(context);
     var w = Container(
-      width: 320 + 20 * 2,
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
-      decoration: BoxDecoration(
-          borderRadius: const BorderRadius.all(Radius.circular(13)),
-          border: Border.all(color: Theme.of(context).colorScheme.background)),
       child: Ink(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            getConnectionPageTitle(context, false).marginOnly(bottom: 15),
+            const TanTitulo('Conectar a um cliente'),
+            const SizedBox(height: 14),
+            const TanRotulo('ID do cliente'),
             Row(
               children: [
                 Expanded(
@@ -419,22 +409,32 @@ class _ConnectionPageState extends State<ConnectionPage>
                           enableSuggestions: false,
                           keyboardType: TextInputType.visiblePassword,
                           focusNode: fieldFocusNode,
-                          style: const TextStyle(
-                            fontFamily: 'WorkSans',
-                            fontSize: 22,
-                            height: 1.4,
-                          ),
+                          style: tanTexto(context,
+                              size: 18, peso: FontWeight.w600),
                           maxLines: 1,
                           cursorColor:
                               Theme.of(context).textTheme.titleLarge?.color,
                           decoration: InputDecoration(
-                              filled: false,
+                              filled: true,
+                              fillColor: tan.bloco,
+                              border: const OutlineInputBorder(
+                                  borderSide: BorderSide.none,
+                                  borderRadius: kTanRaioPeca),
+                              enabledBorder: const OutlineInputBorder(
+                                  borderSide: BorderSide.none,
+                                  borderRadius: kTanRaioPeca),
+                              focusedBorder: const OutlineInputBorder(
+                                  borderSide:
+                                      BorderSide(color: kTanLaranja, width: 1.5),
+                                  borderRadius: kTanRaioPeca),
                               counterText: '',
                               hintText: _idInputFocused.value
                                   ? null
-                                  : translate('Enter Remote ID'),
+                                  : 'Digite o ID que o cliente passou',
+                              hintStyle: tanTexto(context,
+                                  size: 14, cor: tan.dica),
                               contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 15, vertical: 13)),
+                                  horizontal: 12, vertical: 12)),
                           controller: fieldTextEditingController,
                           inputFormatters: [IDTextInputFormatter()],
                           onChanged: (v) {
@@ -513,27 +513,22 @@ class _ConnectionPageState extends State<ConnectionPage>
                     );
                   },
                 )),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 13.0),
-              child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                SizedBox(
-                  height: 28.0,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      onConnect();
-                    },
-                    child: Text(translate("Connect")),
-                  ),
-                ),
                 const SizedBox(width: 8),
+                TanBotao(
+                  texto: 'Conectar',
+                  icone: Icons.cast_connected_rounded,
+                  height: 46,
+                  onTap: () {
+                    onConnect();
+                  },
+                ),
+                const SizedBox(width: 6),
                 Container(
-                  height: 28.0,
-                  width: 28.0,
+                  height: 46.0,
+                  width: 40.0,
                   decoration: BoxDecoration(
-                    border: Border.all(color: Theme.of(context).dividerColor),
-                    borderRadius: BorderRadius.circular(8),
+                    color: tan.bloco,
+                    borderRadius: kTanRaioPeca,
                   ),
                   child: Center(
                     child: StatefulBuilder(
@@ -615,12 +610,11 @@ class _ConnectionPageState extends State<ConnectionPage>
                   ),
                 ),
               ]),
-            ),
           ],
         ),
       ),
     );
     return Container(
-        constraints: const BoxConstraints(maxWidth: 600), child: w);
+        constraints: const BoxConstraints(maxWidth: 640), child: w);
   }
 }

@@ -159,6 +159,17 @@ flutter:
     - assets/
 
   fonts:
+    # TAN! Suporte: a mesma fonte do TAN! Web (SIL OFL, assets/fonts/inter/OFL.txt).
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/inter/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/inter/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/inter/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/inter/Inter-Bold.ttf
+          weight: 700
     - family: GestureIcons
       fonts:
         - asset: assets/gestures.ttf
