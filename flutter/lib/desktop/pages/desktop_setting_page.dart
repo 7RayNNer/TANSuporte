@@ -11,6 +11,7 @@ import 'package:flutter_hbb/common/widgets/setting_widgets.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_home_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_tab_page.dart';
+import 'package:flutter_hbb/desktop/pages/tan_comum.dart';
 import 'package:flutter_hbb/desktop/widgets/remote_toolbar.dart';
 import 'package:flutter_hbb/mobile/widgets/dialog.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
@@ -36,7 +37,6 @@ const double _kRadioLeftMargin = 10;
 const double _kListViewBottomMargin = 15;
 const double _kTitleFontSize = 20;
 const double _kContentFontSize = 15;
-const Color _accentColor = MyTheme.accent;
 const String _kSettingPageControllerTag = 'settingPageController';
 const String _kSettingPageTabKeyTag = 'settingPageTabKey';
 
@@ -306,10 +306,10 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
     final settingsText = Text(
       translate('Settings'),
       textAlign: TextAlign.left,
-      style: const TextStyle(
-        color: _accentColor,
+      style: TextStyle(
+        color: TanCores.of(context).titulo,
         fontSize: _kTitleFontSize,
-        fontWeight: FontWeight.w400,
+        fontWeight: FontWeight.w700,
       ),
     );
     return Row(
@@ -370,18 +370,18 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
             Container(
               width: 4,
               height: _kTabHeight * 0.7,
-              color: selected ? _accentColor : null,
+              color: selected ? kTanLaranja : null,
             ),
             Icon(
               selected ? tab.selected : tab.unselected,
-              color: selected ? _accentColor : null,
+              color: selected ? kTanLaranja : TanCores.of(context).titulo,
               size: 20,
             ).marginOnly(left: 13, right: 10),
             Text(
               translate(tab.label),
               style: TextStyle(
-                  color: selected ? _accentColor : null,
-                  fontWeight: FontWeight.w400,
+                  color: selected ? TanCores.of(context).titulo : null,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   fontSize: _kContentFontSize),
             ),
           ]),
@@ -1820,7 +1820,7 @@ class _NetworkState extends State<_Network> with AutomaticKeepAliveClientMixin {
             );
 
       return ListTile(
-        leading: Icon(icon, color: _accentColor),
+        leading: Icon(icon, color: TanCores.of(context).titulo),
         title: titleWidget,
         enabled: !locked,
         onTap: onTap,
@@ -2617,19 +2617,19 @@ Widget _Card(
       Flexible(
         child: SizedBox(
           width: _kCardFixedWidth,
-          child: Card(
+          // TAN! Suporte: painel com fio fino e titulo com a barrinha laranja (padrao TAN! Web).
+          child: Builder(
+            builder: (context) => Card(
+            elevation: 0,
+            color: TanCores.of(context).painel,
+            shape: RoundedRectangleBorder(
+                borderRadius: kTanRaioBloco,
+                side: BorderSide(color: TanCores.of(context).linha)),
             child: Column(
               children: [
                 Row(
                   children: [
-                    Expanded(
-                        child: Text(
-                      translate(title),
-                      textAlign: TextAlign.start,
-                      style: const TextStyle(
-                        fontSize: _kTitleFontSize,
-                      ),
-                    )),
+                    Expanded(child: TanTitulo(translate(title), size: 15)),
                     ...?title_suffix
                   ],
                 ).marginOnly(left: _kContentHMargin, top: 10, bottom: 10),
@@ -2637,7 +2637,7 @@ Widget _Card(
                     .map((e) => e.marginOnly(top: 4, right: _kContentHMargin)),
               ],
             ).marginOnly(bottom: 10),
-          ).marginOnly(left: _kCardLeftMargin, top: 15),
+          )).marginOnly(left: _kCardLeftMargin, top: 15),
         ),
       ),
     ],

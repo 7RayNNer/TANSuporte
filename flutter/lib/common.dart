@@ -3679,15 +3679,12 @@ class ComboBox extends StatelessWidget {
     }
     var ref = values[index].obs;
     current = keys[index];
+    // TAN! Suporte: bloco chapado sem contorno, como os campos do TAN! Web.
     return Container(
+      padding: const EdgeInsets.only(left: 12),
       decoration: BoxDecoration(
-        border: Border.all(
-          color: enabled
-              ? MyTheme.color(context).border2 ?? MyTheme.border
-              : MyTheme.border,
-        ),
-        borderRadius:
-            BorderRadius.circular(8), //border raiuds of dropdown button
+        color: Theme.of(context).inputDecorationTheme.fillColor,
+        borderRadius: const BorderRadius.all(Radius.circular(3)),
       ),
       height: 42, // should be the height of a TextField
       child: Obx(() => DropdownButton<String>(
