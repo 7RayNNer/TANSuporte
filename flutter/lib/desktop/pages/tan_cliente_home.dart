@@ -13,6 +13,8 @@ import 'package:provider/provider.dart';
 
 const _azul = Color(0xFF1E3A8A);
 const _azulClaro = Color(0xFFB5D4F4);
+// ID no modo escuro: o azul da marca some no fundo escuro.
+const _azulIdEscuro = Color(0xFF85B7EB);
 const _laranja = Color(0xFFF26522);
 const _verde = Color(0xFF639922);
 const _amarelo = Color(0xFFEF9F27);
@@ -151,11 +153,13 @@ class _TanClienteHomeState extends State<TanClienteHome> {
             context,
             rotulo: 'Seu ID',
             valor: id.text.isEmpty ? '...' : id.text,
-            estiloValor: const TextStyle(
+            estiloValor: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 2,
-                color: _azul),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? _azulIdEscuro
+                    : _azul),
             acoes: [
               _botaoIcone(Icons.copy_rounded, 'Copiar ID',
                   () => _copiar(_semEspacos(id.text), 'ID copiado')),
