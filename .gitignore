@@ -60,4 +60,4 @@ flutter/web/
 /third_party/libdrmtap/
 
 # TAN! Suporte: arte da marca
-!tan/marca/*.png
+!tan/marca/*
