@@ -28,7 +28,7 @@ Substitua os dois arquivos e faça commit:
 - `tan/marca/icone.png`: quadrado, 1024x1024, fundo transparente ou com o quadrado azul.
 - `tan/marca/icone.svg`: a mesma arte em vetor (aparece na tela inicial do app).
 
-Hoje estão com o ícone "T!" do pacote de marca (`TANWeb/docs/marca-tan/02_ICONS`), como provisório.
+Hoje: balão de chat "T!" (`icone-original.png` é o arquivo recebido, 1254px com cantos pretos; `icone.png` é o recorte com cantos transparentes; `icone.svg` embute o PNG).
 
 ## Gerar o exe
 
