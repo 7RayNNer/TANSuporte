@@ -73,9 +73,9 @@ lazy_static::lazy_static! {
     static ref KEY_PAIR: Mutex<Option<KeyPair>> = Default::default();
     static ref USER_DEFAULT_CONFIG: RwLock<(UserDefaultConfig, Instant)> = RwLock::new((UserDefaultConfig::load(), Instant::now()));
     pub static ref NEW_STORED_PEER_CONFIG: Mutex<HashSet<String>> = Default::default();
-    pub static ref DEFAULT_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
-    pub static ref OVERWRITE_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
-    pub static ref DEFAULT_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
+    pub static ref DEFAULT_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(tan_default_settings());
+    pub static ref OVERWRITE_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(tan_overwrite_settings());
+    pub static ref DEFAULT_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(tan_default_display_settings());
     pub static ref OVERWRITE_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref DEFAULT_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref OVERWRITE_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
@@ -3690,8 +3690,40 @@ mod tests {
 // TAN! Suporte: com TAN_CLIENTE definido no build, gera o executavel do cliente (so recebe conexao).
 fn tan_hard_settings() -> HashMap<String, String> {
     let mut settings = HashMap::new();
-    if matches!(option_env!("TAN_CLIENTE"), Some(v) if !v.is_empty()) {
+    if tan_is_cliente() {
         settings.insert("conn-type".to_owned(), "incoming".to_owned());
     }
+    settings
+}
+
+fn tan_is_cliente() -> bool {
+    matches!(option_env!("TAN_CLIENTE"), Some(v) if !v.is_empty())
+}
+
+// TAN! Suporte: senha de uso unico so com numeros, facil de ditar no telefone.
+fn tan_default_settings() -> HashMap<String, String> {
+    let mut settings = HashMap::new();
+    settings.insert(
+        keys::OPTION_ALLOW_NUMERNIC_ONE_TIME_PASSWORD.to_owned(),
+        "Y".to_owned(),
+    );
+    settings
+}
+
+// TAN! Suporte: o cliente nao aparece na descoberta da rede local nem aceita acesso direto por IP.
+fn tan_overwrite_settings() -> HashMap<String, String> {
+    let mut settings = HashMap::new();
+    if tan_is_cliente() {
+        settings.insert("enable-lan-discovery".to_owned(), "N".to_owned());
+        settings.insert("direct-server".to_owned(), "N".to_owned());
+        settings.insert("allow-remote-config-modification".to_owned(), "N".to_owned());
+    }
+    settings
+}
+
+// TAN! Suporte: a tela remota se ajusta a janela do tecnico.
+fn tan_default_display_settings() -> HashMap<String, String> {
+    let mut settings = HashMap::new();
+    settings.insert(keys::OPTION_VIEW_STYLE.to_owned(), "adaptive".to_owned());
     settings
 }
