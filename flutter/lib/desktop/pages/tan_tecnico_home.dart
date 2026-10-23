@@ -6,7 +6,10 @@ import 'package:flutter_hbb/desktop/pages/tan_comum.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_tab_page.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/server_model.dart';
+import 'package:flutter_hbb/models/state_model.dart';
+import 'package:get/get.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class TanTecnicoHome extends StatefulWidget {
   const TanTecnicoHome({Key? key, required this.conectar}) : super(key: key);
@@ -29,7 +32,25 @@ class _TanTecnicoHomeState extends State<TanTecnicoHome>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TanCabecalho(complemento: 'Técnico', direita: TanEstado(tanStatus)),
+          TanCabecalho(
+            complemento:
+                'Técnico · v${bind.mainGetBuildinOption(key: 'tan-versao')}',
+            direita: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // versao nova nas releases da TAN (src/tan_update.rs)
+                Obx(() => stateGlobal.updateUrl.value.isEmpty
+                    ? const SizedBox.shrink()
+                    : Padding(
+                        padding: const EdgeInsets.only(right: 18),
+                        child: TanLink('Nova versão disponível',
+                            onTap: () => launchUrlString(
+                                stateGlobal.updateUrl.value)),
+                      )),
+                TanEstado(tanStatus),
+              ],
+            ),
+          ),
           const SizedBox(height: 8),
           Expanded(
             child: Row(

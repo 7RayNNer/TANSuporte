@@ -4067,7 +4067,8 @@ void earlyAssert() {
 
 void checkUpdate() {
   if (!isWeb) {
-    if (!bind.isCustomClient()) {
+    // TAN! Suporte: o cliente personalizado tambem procura versao nova (releases da TAN).
+    if (!bind.isCustomClient() || bind.mainGetAppNameSync() == 'TANSuporte') {
       platformFFI.registerEventHandler(
           kCheckSoftwareUpdateFinish, kCheckSoftwareUpdateFinish,
           (Map<String, dynamic> evt) async {

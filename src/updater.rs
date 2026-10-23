@@ -185,7 +185,9 @@ fn check_update(manually: bool) -> ResultType<()> {
     if !(manually || config::Config::get_bool_option(keys::OPTION_ALLOW_AUTO_UPDATE)) {
         return Ok(());
     }
-    if do_check_software_update().is_err() {
+    // TAN! Suporte: releases da TAN no lugar de api.rustdesk.com.
+    let _ = do_check_software_update;
+    if crate::tan_update::verificar().is_err() {
         // ignore
         return Ok(());
     }
@@ -197,22 +199,8 @@ fn check_update(manually: bool) -> ResultType<()> {
         let download_url = update_url.replace("tag", "download");
         let version = download_url.split('/').last().unwrap_or_default();
         #[cfg(target_os = "windows")]
-        let download_url = if cfg!(feature = "flutter") {
-            let Some(arch) = crate::platform::windows::release_arch_suffix() else {
-                bail!(
-                    "Unsupported Windows release architecture: {}",
-                    std::env::consts::ARCH
-                );
-            };
-            format!(
-                "{}/rustdesk-{}-{}.{}",
-                download_url,
-                version,
-                arch,
-                if update_msi { "msi" } else { "exe" }
-            )
-        } else {
-            format!("{}/rustdesk-{}-x86-sciter.exe", download_url, version)
+        let Some(download_url) = crate::tan_update::url_download(&update_url) else {
+            bail!("URL de release inesperada: {}", update_url);
         };
         log::debug!("New version available: {}", &version);
         let client = create_http_client_with_url_strict(&download_url)?;
@@ -376,8 +364,9 @@ pub fn get_update_download_file_from_url(url: &str) -> Option<PathBuf> {
     let tag = segments.next()?;
     let filename = segments.next()?;
 
-    if owner != "rustdesk"
-        || repo != "rustdesk"
+    // TAN! Suporte: so aceita os exes das releases da TAN.
+    if owner != crate::tan_update::REPO_DONO
+        || repo != crate::tan_update::REPO_NOME
         || releases != "releases"
         || download != "download"
         || tag.is_empty()

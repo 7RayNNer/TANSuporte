@@ -1018,6 +1018,13 @@ pub fn is_modifier(evt: &KeyEvent) -> bool {
 }
 
 pub fn check_software_update() {
+    // TAN! Suporte: procura versao nova nas releases da TAN (tan_update.rs).
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+        std::thread::spawn(|| allow_err!(crate::tan_update::verificar()));
+        return;
+    }
+    #[allow(unreachable_code)]
     if is_custom_client() {
         return;
     }
