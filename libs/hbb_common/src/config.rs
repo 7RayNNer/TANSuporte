@@ -80,7 +80,7 @@ lazy_static::lazy_static! {
     pub static ref DEFAULT_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref OVERWRITE_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(tan_hard_settings());
-    pub static ref BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(tan_builtin_settings());
+    pub static ref BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
 }
 
 #[cfg(target_os = "android")]
@@ -3725,15 +3725,5 @@ fn tan_overwrite_settings() -> HashMap<String, String> {
 fn tan_default_display_settings() -> HashMap<String, String> {
     let mut settings = HashMap::new();
     settings.insert(keys::OPTION_VIEW_STYLE.to_owned(), "adaptive".to_owned());
-    settings
-}
-
-// TAN! Suporte: com TAN_FIXO no build, a tela do cliente oferece instalar e definir senha fixa
-// (acesso sem ninguem do outro lado). O Flutter le pela opcao embutida "tan-fixo".
-fn tan_builtin_settings() -> HashMap<String, String> {
-    let mut settings = HashMap::new();
-    if matches!(option_env!("TAN_FIXO"), Some(v) if !v.is_empty()) {
-        settings.insert("tan-fixo".to_owned(), "Y".to_owned());
-    }
     settings
 }

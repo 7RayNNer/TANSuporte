@@ -276,7 +276,12 @@ class TanEstado extends StatelessWidget {
       children: [
         Container(width: 8, height: 8, color: cor),
         const SizedBox(width: 7),
-        Text(texto, style: tanTexto(context, size: 12, cor: c.textoVar)),
+        Flexible(
+          child: Text(texto,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tanTexto(context, size: 12, cor: c.textoVar)),
+        ),
       ],
     );
   }

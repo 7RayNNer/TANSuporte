@@ -138,10 +138,6 @@ class _TanClienteHomeState extends State<TanClienteHome>
                 'Copiado. Cole na conversa com o técnico.');
           },
         ),
-        if (bind.mainGetBuildinOption(key: 'tan-fixo') == 'Y') ...[
-          const SizedBox(height: 18),
-          _acessoFixo(context),
-        ],
         const SizedBox(height: 14),
         Container(
           padding: const EdgeInsets.only(top: 10),
@@ -149,8 +145,12 @@ class _TanClienteHomeState extends State<TanClienteHome>
               border: Border(top: BorderSide(color: c.linha))),
           child: Row(
             children: [
-              TanEstado(tanStatus),
-              const Spacer(),
+              Expanded(
+                  child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: TanEstado(tanStatus))),
+              _linkAcessoFixo(),
+              const SizedBox(width: 14),
               TanLink('Fechar', onTap: () {
                 SystemNavigator.pop();
                 // https://github.com/flutter/flutter/issues/66631
@@ -166,31 +166,8 @@ class _TanClienteHomeState extends State<TanClienteHome>
   }
 }
 
-// TAN! Suporte: so no executavel de acesso fixo (TAN_FIXO no build).
-Widget _acessoFixo(BuildContext context) {
-  final c = TanCores.of(context);
-  final instalado = bind.mainIsInstalled();
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      const TanTitulo('Acesso fixo', size: 13),
-      const SizedBox(height: 8),
-      Text(
-          instalado
-              ? 'Instalado. Com a senha fixa, o técnico acessa mesmo sem ninguém neste computador.'
-              : 'Instale para o técnico acessar este computador mesmo sem ninguém por perto.',
-          style: tanTexto(context, size: 12.5, cor: c.textoVar)),
-      const SizedBox(height: 10),
-      if (instalado)
-        TanBotao(
-            texto: 'Definir senha fixa',
-            icone: Icons.lock_outline_rounded,
-            onTap: () => setPasswordDialog())
-      else
-        TanBotao(
-            texto: 'Instalar neste computador',
-            icone: Icons.download_done_rounded,
-            onTap: () => bind.mainGotoInstall()),
-    ],
-  );
-}
+// TAN! Suporte: acesso fixo (instalar e senha fixa) fica num link discreto, para o cliente comum
+// nao instalar sem querer. A instalacao ainda pede o aviso do Windows.
+Widget _linkAcessoFixo() => bind.mainIsInstalled()
+    ? TanLink('Senha fixa', onTap: () => setPasswordDialog())
+    : TanLink('Instalar acesso fixo', onTap: () => bind.mainGotoInstall());
