@@ -3837,7 +3837,7 @@ Size getIncomingOnlyHomeSize() {
   final magicWidth = isWindows ? 11.0 : 2.0;
   final magicHeight = 10.0;
   return imcomingOnlyHomeSize +
-      Offset(magicWidth, kDesktopRemoteTabBarHeight + magicHeight);
+      Offset(magicWidth, (stateGlobal.showTabBar.isTrue ? kDesktopRemoteTabBarHeight : 0) + magicHeight);
 }
 
 Size getIncomingOnlySettingsSize() {

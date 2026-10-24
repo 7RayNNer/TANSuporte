@@ -42,22 +42,21 @@ class _TanClienteHomeState extends State<TanClienteHome>
         width: 360,
         color: c.fundo,
         child: SingleChildScrollView(
-          child: Padding(
+          child: Column(
             key: widget.contentKey,
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const TanCabecalho(),
-                const SizedBox(height: 8),
-                TanPainel(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TanBarraTitulo(maximizar: false, onFechar: _fechar),
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: TanPainel(
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
                   child: Consumer<ServerModel>(
                     builder: (context, model, _) => _corpo(context, model),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -138,9 +137,9 @@ class _TanClienteHomeState extends State<TanClienteHome>
                 'Copiado. Cole na conversa com o técnico.');
           },
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         Container(
-          padding: const EdgeInsets.only(top: 10),
+          padding: const EdgeInsets.only(top: 12),
           decoration: BoxDecoration(
               border: Border(top: BorderSide(color: c.linha))),
           child: Row(
@@ -150,14 +149,6 @@ class _TanClienteHomeState extends State<TanClienteHome>
                       alignment: Alignment.centerLeft,
                       child: TanEstado(tanStatus))),
               _linkAcessoFixo(),
-              const SizedBox(width: 14),
-              TanLink('Fechar', onTap: () {
-                SystemNavigator.pop();
-                // https://github.com/flutter/flutter/issues/66631
-                if (isWindows) {
-                  exit(0);
-                }
-              }),
             ],
           ),
         ),
@@ -171,3 +162,12 @@ class _TanClienteHomeState extends State<TanClienteHome>
 Widget _linkAcessoFixo() => bind.mainIsInstalled()
     ? TanLink('Senha fixa', onTap: () => setPasswordDialog())
     : TanLink('Instalar acesso fixo', onTap: () => bind.mainGotoInstall());
+
+// O X da janela do cliente encerra o programa (no tecnico ele so esconde, como no RustDesk).
+void _fechar() {
+  SystemNavigator.pop();
+  // https://github.com/flutter/flutter/issues/66631
+  if (isWindows) {
+    exit(0);
+  }
+}

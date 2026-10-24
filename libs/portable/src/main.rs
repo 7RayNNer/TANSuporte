@@ -2,8 +2,7 @@
 
 use std::{
     path::{Path, PathBuf},
-    process::{Command, Stdio},;
-    format!("{}{}", base, option_env!("TAN_PASTA_SUFIXO").unwrap_or(""))
+    process::{Command, Stdio},
 };
 
 use bin_reader::{normalize_path, BinaryReader};

@@ -42,6 +42,9 @@ class _DesktopTabPageState extends State<DesktopTabPage> {
 
   _DesktopTabPageState() {
     RemoteCountState.init();
+    // TAN! Suporte: a barra de abas do RustDesk sai; as telas da TAN desenham a propria barra de
+    // titulo (TanBarraTitulo). O DesktopTab continua montado e segue cuidando de fechar/esconder.
+    stateGlobal.showTabBar.value = false;
     Get.put<DesktopTabController>(tabController);
     tabController.add(TabInfo(
         key: kTabLabelHomePage,

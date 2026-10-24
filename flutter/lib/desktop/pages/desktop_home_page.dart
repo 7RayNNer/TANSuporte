@@ -62,7 +62,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     super.build(context);
     final isIncomingOnly = bind.isIncomingOnly();
     if (!isIncomingOnly) {
-      return _buildBlock(child: TanTecnicoHome(conectar: ConnectionPage()));
+      return _buildBlock(child: const TanTecnicoHome());
     }
     return _buildBlock(
         child: Row(

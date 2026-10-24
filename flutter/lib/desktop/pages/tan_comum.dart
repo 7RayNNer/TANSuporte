@@ -1,7 +1,8 @@
 // TAN! Suporte: pecas visuais das telas do cliente e do tecnico, na linguagem do TAN! Web
 // (TANWeb/lib/tema/tema.dart e lib/widgets/blocos.dart): fundo cinza-azulado, paineis brancos de
 // canto quase reto, titulo com barrinha laranja, campo como bloco chapado sem contorno, botao azul
-// cheio, estado como quadradinho + texto, fonte Inter.
+// cheio, estado como bolinha + texto, fonte Inter. A barrinha laranja fica so no titulo principal
+// de cada tela (TanTitulo); secoes usam TanSubtitulo.
 import 'dart:async';
 import 'dart:convert';
 
@@ -9,6 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
+import 'package:flutter_hbb/models/state_model.dart';
+import 'package:get/get.dart';
+import 'package:window_manager/window_manager.dart';
 
 const kTanFonte = 'Inter';
 const kTanAzul = Color(0xFF1F3B73);
@@ -257,24 +261,33 @@ class TanLink extends StatelessWidget {
 
 enum TanStatus { conectando, pronto, offline }
 
-/// Estado como quadradinho colorido + texto.
+/// Estado como bolinha colorida + texto.
 class TanEstado extends StatelessWidget {
-  const TanEstado(this.status, {Key? key}) : super(key: key);
+  const TanEstado(this.status, {Key? key, this.curto = false})
+      : super(key: key);
 
   final TanStatus status;
+
+  /// "Pronto" em vez de "Pronto para conectar" (barra de titulo do tecnico).
+  final bool curto;
 
   @override
   Widget build(BuildContext context) {
     final c = TanCores.of(context);
     final (cor, texto) = switch (status) {
-      TanStatus.pronto => (c.ok, 'Pronto para conectar'),
-      TanStatus.conectando => (c.pend, 'Conectando ao servidor...'),
-      TanStatus.offline => (c.bad, 'Sem conexão com o servidor'),
+      TanStatus.pronto => (c.ok, curto ? 'Pronto' : 'Pronto para conectar'),
+      TanStatus.conectando =>
+        (c.pend, curto ? 'Conectando...' : 'Conectando ao servidor...'),
+      TanStatus.offline =>
+        (c.bad, curto ? 'Sem servidor' : 'Sem conexão com o servidor'),
     };
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(width: 8, height: 8, color: cor),
+        Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: cor, shape: BoxShape.circle)),
         const SizedBox(width: 7),
         Flexible(
           child: Text(texto,
@@ -358,3 +371,262 @@ void tanCopiar(String texto, String aviso) {
 }
 
 String tanSemEspacos(String s) => s.replaceAll(' ', '');
+
+/// Titulo de secao dentro de uma tela: azul, sem barrinha.
+class TanSubtitulo extends StatelessWidget {
+  const TanSubtitulo(this.texto, {Key? key}) : super(key: key);
+
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) => Text(texto,
+      style: tanTexto(context,
+          size: 13, peso: FontWeight.w600, cor: TanCores.of(context).titulo));
+}
+
+/// Linha de configuracao/informacao: rotulo a esquerda, conteudo a direita, fio embaixo.
+class TanLinha extends StatelessWidget {
+  const TanLinha(
+      {Key? key,
+      required this.rotulo,
+      required this.direita,
+      this.ultima = false})
+      : super(key: key);
+
+  final String rotulo;
+  final Widget direita;
+  final bool ultima;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = TanCores.of(context);
+    return Container(
+      constraints: const BoxConstraints(minHeight: 40),
+      decoration: BoxDecoration(
+          border: ultima ? null : Border(bottom: BorderSide(color: c.linha))),
+      child: Row(
+        children: [
+          Expanded(child: Text(rotulo, style: tanTexto(context, size: 13))),
+          const SizedBox(width: 12),
+          direita,
+        ],
+      ),
+    );
+  }
+}
+
+/// Chave liga/desliga de canto reto.
+class TanChave extends StatelessWidget {
+  const TanChave({Key? key, required this.valor, required this.onChanged})
+      : super(key: key);
+
+  final bool valor;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = TanCores.of(context);
+    return TanToque(
+      onTap: onChanged == null ? null : () => onChanged!(!valor),
+      builder: (context, sobre) => AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        width: 32,
+        height: 18,
+        padding: const EdgeInsets.all(2),
+        alignment: valor ? Alignment.centerRight : Alignment.centerLeft,
+        decoration: BoxDecoration(
+            color: valor ? c.botao : c.blocoSobre, borderRadius: kTanRaioPeca),
+        child: Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+              color: valor ? c.botaoTexto : c.painel,
+              borderRadius: const BorderRadius.all(Radius.circular(2))),
+        ),
+      ),
+    );
+  }
+}
+
+/// Seletor segmentado (uma opcao entre poucas).
+class TanSegmentado<T> extends StatelessWidget {
+  const TanSegmentado(
+      {Key? key,
+      required this.opcoes,
+      required this.valor,
+      required this.onChanged})
+      : super(key: key);
+
+  final List<(T, String)> opcoes;
+  final T valor;
+  final ValueChanged<T>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = TanCores.of(context);
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(color: c.bloco, borderRadius: kTanRaioPeca),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final (v, rotulo) in opcoes)
+            TanToque(
+              onTap: onChanged == null ? null : () => onChanged!(v),
+              builder: (context, sobre) => Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: v == valor
+                      ? c.botao
+                      : (sobre ? c.blocoSobre : Colors.transparent),
+                  borderRadius: const BorderRadius.all(Radius.circular(2)),
+                ),
+                child: Text(rotulo,
+                    style: tanTexto(context,
+                        size: 12,
+                        peso: v == valor ? FontWeight.w600 : FontWeight.w400,
+                        cor: v == valor ? c.botaoTexto : c.texto)),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Icone clicavel pequeno (barra de titulo, acoes de linha).
+class TanIcone extends StatelessWidget {
+  const TanIcone(this.icone,
+      {Key? key,
+      required this.onTap,
+      this.dica,
+      this.cor,
+      this.tamanho = 18,
+      this.largura = 34,
+      this.fechar = false})
+      : super(key: key);
+
+  final IconData icone;
+  final VoidCallback? onTap;
+  final String? dica;
+  final Color? cor;
+  final double tamanho;
+  final double largura;
+
+  /// Fundo vermelho com o mouse em cima (botao de fechar janela).
+  final bool fechar;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = TanCores.of(context);
+    return TanToque(
+      onTap: onTap,
+      dica: dica,
+      builder: (context, sobre) => Container(
+        width: largura,
+        height: fechar ? 40 : largura,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: sobre ? (fechar ? const Color(0xFFC42B1C) : c.bloco) : null,
+          borderRadius: fechar ? null : kTanRaioPeca,
+        ),
+        child: Icon(icone,
+            size: tamanho,
+            color: sobre && fechar ? Colors.white : (cor ?? c.textoVar)),
+      ),
+    );
+  }
+}
+
+/// Barra de titulo propria da janela: arrasta a janela, logo, nome e botoes do Windows.
+/// Fechar chama windowManager.close(); quem decide esconder/fechar continua sendo o
+/// DesktopTab do RustDesk (onWindowClose), que segue montado embaixo.
+class TanBarraTitulo extends StatelessWidget {
+  const TanBarraTitulo(
+      {Key? key,
+      this.complemento,
+      this.direita,
+      this.maximizar = true,
+      this.onFechar})
+      : super(key: key);
+
+  final String? complemento;
+  final Widget? direita;
+  final bool maximizar;
+
+  /// No lugar de windowManager.close() (o cliente encerra o programa em vez de esconder).
+  final VoidCallback? onFechar;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = TanCores.of(context);
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+          color: c.painel, border: Border(bottom: BorderSide(color: c.linha))),
+      child: Row(
+        children: [
+          Expanded(
+            child: DragToMoveArea(
+              child: Container(
+                color: Colors.transparent,
+                padding: const EdgeInsets.only(left: 12),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                        borderRadius: kTanRaioPeca,
+                        child: SizedBox(
+                            width: 22, height: 22, child: loadIcon(22))),
+                    const SizedBox(width: 9),
+                    Text('TAN! Suporte',
+                        style: tanTexto(context,
+                            size: 13.5, peso: FontWeight.w700, cor: c.titulo)),
+                    if (complemento != null) ...[
+                      const SizedBox(width: 8),
+                      Text(complemento!,
+                          style:
+                              tanTexto(context, size: 11.5, cor: c.textoVar)),
+                    ],
+                    const Spacer(),
+                    if (direita != null) direita!,
+                    const SizedBox(width: 12),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          TanIcone(Icons.remove_rounded,
+              dica: 'Minimizar',
+              largura: 44,
+              onTap: () => windowManager.minimize()),
+          if (maximizar)
+            Obx(() => TanIcone(
+                  stateGlobal.isMaximized.isTrue
+                      ? Icons.filter_none_rounded
+                      : Icons.crop_square_rounded,
+                  dica: stateGlobal.isMaximized.isTrue
+                      ? 'Restaurar'
+                      : 'Maximizar',
+                  largura: 44,
+                  tamanho: 15,
+                  onTap: () async {
+                    if (await windowManager.isMaximized()) {
+                      await windowManager.unmaximize();
+                      stateGlobal.setMaximized(false);
+                    } else {
+                      await windowManager.maximize();
+                      stateGlobal.setMaximized(true);
+                    }
+                  },
+                )),
+          TanIcone(Icons.close_rounded,
+              dica: 'Fechar',
+              largura: 46,
+              fechar: true,
+              onTap: onFechar ?? () => windowManager.close()),
+        ],
+      ),
+    );
+  }
+}
