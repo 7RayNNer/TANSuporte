@@ -3738,5 +3738,7 @@ fn tan_builtin_settings() -> HashMap<String, String> {
         _ => "0.0.0",
     };
     settings.insert("tan-versao".to_owned(), versao.to_owned());
+    // "Parar servico" na bandeja removia o servico e com ele o acesso fixo; o menu fica so com Abrir.
+    settings.insert("hide-stop-service".to_owned(), "Y".to_owned());
     settings
 }
