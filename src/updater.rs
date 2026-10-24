@@ -231,7 +231,12 @@ fn check_update(manually: bool) -> ResultType<()> {
             }
         }
         if !is_file_exists {
-            let response = client.get(&download_url).send()?;
+            // TAN! Suporte: o cliente HTTP tem o limite padrao de 30 s para a requisicao inteira, curto para
+            // baixar ~25 MB do GitHub em conexao lenta.
+            let response = client
+                .get(&download_url)
+                .timeout(Duration::from_secs(60 * 10))
+                .send()?;
             if !response.status().is_success() {
                 bail!(
                     "Failed to download the new version file: {}",
