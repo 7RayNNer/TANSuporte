@@ -1,0 +1,135 @@
+# TAN! Suporte: build rapido SO da interface (Flutter), reaproveitando o nucleo em Rust
+# (librustdesk.dll) de um build completo anterior do tan-windows.yml. ~10 min em vez de ~40.
+#
+# So vale quando o Rust NAO mudou desde o build base: a ponte (generated_bridge.dart) e gerada do
+# codigo atual e precisa bater com a dll reaproveitada. Mudou Rust -> rode o tan-windows.yml.
+name: TAN! Suporte - so interface
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_run:
+        description: "ID do build completo (tan-windows) de onde vem o nucleo; vazio = o ultimo que deu certo"
+        required: false
+        default: ""
+
+env:
+  FLUTTER_VERSION: "3.24.5"
+
+jobs:
+  generate-bridge:
+    uses: ./.github/workflows/bridge.yml
+
+  build-ui:
+    name: Interface (${{ matrix.variante.nome }})
+    needs: [generate-bridge]
+    runs-on: windows-2022
+    permissions:
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        variante:
+          - { nome: cliente, exe: TAN-Suporte }
+          - { nome: tecnico, exe: TAN-Suporte-Tecnico }
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAN_PASTA_SUFIXO: ${{ matrix.variante.nome == 'tecnico' && '-tecnico' || '' }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Build base
+        shell: bash
+        run: |
+          base="${{ inputs.base_run }}"
+          if [ -z "$base" ]; then
+            base=$(gh run list -R "$GITHUB_REPOSITORY" --workflow tan-windows.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          fi
+          echo "BASE_RUN=$base" >> "$GITHUB_ENV"
+          echo "Nucleo do build $base"
+          gh run download "$base" -R "$GITHUB_REPOSITORY" -n "tan-suporte-${{ matrix.variante.nome }}-x64-pasta" -D base
+          ls base
+
+      - name: Restore bridge files
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: bridge-artifact
+          path: ./
+
+      - name: Gerar icones TAN!
+        run: |
+          pip install pillow
+          python tan/gerar_icones.py
+
+      - name: Install flutter
+        uses: subosito/flutter-action@2783a3f08e1baf891508463f8c6653c258246225 # v2.12.0
+        with:
+          channel: "stable"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          architecture: x64
+
+      # https://github.com/flutter/flutter/issues/155685
+      - name: Replace engine with rustdesk custom flutter engine
+        run: |
+          flutter precache --windows
+          Invoke-WebRequest -Uri https://github.com/rustdesk/engine/releases/download/main/windows-x64-release.zip -OutFile windows-x64-release.zip
+          Expand-Archive -Path windows-x64-release.zip -DestinationPath windows-x64-release
+          mv -Force windows-x64-release/*  C:/hostedtoolcache/windows/flutter/stable-${{ env.FLUTTER_VERSION }}-x64/bin/cache/artifacts/engine/windows-x64-release/
+
+      - name: Patch flutter
+        shell: bash
+        run: |
+          cp .github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff $(dirname $(dirname $(which flutter)))
+          cd $(dirname $(dirname $(which flutter)))
+          git apply flutter_3.24.4_dropdown_menu_enableFilter.diff
+
+      - name: Build da interface
+        run: |
+          New-Item -ItemType Directory -Force target/release | Out-Null
+          Copy-Item base/librustdesk.dll target/release/
+          Push-Location flutter
+          flutter build windows --release
+          Pop-Location
+          # pasta final: a do build base, com a interface nova por cima
+          Copy-Item -Recurse base rustdesk
+          Remove-Item rustdesk/TANSuporte.exe
+          Copy-Item -Recurse -Force flutter/build/windows/x64/runner/Release/* rustdesk/
+          Move-Item rustdesk/rustdesk.exe rustdesk/TANSuporte.exe
+          Copy-Item -Force base/librustdesk.dll rustdesk/librustdesk.dll
+
+      - name: find Runner.res
+        continue-on-error: true
+        shell: bash
+        run: |
+          runner_res=$(find . -name "Runner.res")
+          if [ -n "$runner_res" ]; then cp $runner_res ./libs/portable/Runner.res; fi
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        with:
+          toolchain: "1.75"
+          targets: x86_64-pc-windows-msvc
+
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          prefix-key: tan-ui-portable
+
+      - name: Empacotar
+        shell: bash
+        run: |
+          sed -i '/dpiAware/d' res/manifest.xml
+          pushd ./libs/portable
+          pip3 install -r requirements.txt
+          python3 ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/TANSuporte.exe
+          popd
+          mkdir -p ./SignOutput
+          packer=$(ls ./target/release/rustdesk-portable-packer.exe ./libs/portable/target/release/rustdesk-portable-packer.exe 2>/dev/null | head -1)
+          mv "$packer" ./SignOutput/${{ matrix.variante.exe }}-ui.exe
+
+      - name: Upload exe
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tan-suporte-${{ matrix.variante.nome }}-ui
+          path: ./SignOutput/*.exe

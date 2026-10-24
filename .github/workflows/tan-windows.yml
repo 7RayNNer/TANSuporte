@@ -45,6 +45,7 @@ jobs:
       TARGET: x86_64-pc-windows-msvc
       VCPKG_TRIPLET: x64-windows-static
       TAN_CLIENTE: ${{ matrix.variante.tan-cliente }}
+      TAN_PASTA_SUFIXO: ${{ matrix.variante.nome == 'tecnico' && '-tecnico' || '' }}
     steps:
       - name: Export GitHub Actions cache environment variables
         uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6

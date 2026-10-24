@@ -2,7 +2,8 @@
 
 use std::{
     path::{Path, PathBuf},
-    process::{Command, Stdio},
+    process::{Command, Stdio},;
+    format!("{}{}", base, option_env!("TAN_PASTA_SUFIXO").unwrap_or(""))
 };
 
 use bin_reader::{normalize_path, BinaryReader};
@@ -27,12 +28,14 @@ const SET_FOREGROUND_WINDOW_ENV_KEY: &str = "SET_FOREGROUND_WINDOW";
 // custom client gets its own directory instead of sharing RustDesk's. Falls back to
 // APP_PREFIX when no package is injected, which keeps stock builds unchanged.
 fn app_dir_name(exe: &str) -> String {
-    Path::new(&exe.replace('\\', "/"))
+    // TAN! Suporte: o tecnico (TAN_PASTA_SUFIXO=-tecnico no build) nao divide a pasta com o cliente.
+    let base = Path::new(&exe.replace('\\', "/"))
         .file_stem()
         .and_then(|stem| stem.to_str())
         .map(|stem| stem.trim().to_lowercase())
         .filter(|stem| !stem.is_empty())
-        .unwrap_or_else(|| APP_PREFIX.to_owned())
+        .unwrap_or_else(|| APP_PREFIX.to_owned());
+    format!("{}{}", base, option_env!("TAN_PASTA_SUFIXO").unwrap_or(""))
 }
 
 fn is_timestamp_matches(dir: &Path, ts: &mut u64) -> bool {
