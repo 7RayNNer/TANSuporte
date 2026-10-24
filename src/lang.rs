@@ -256,7 +256,10 @@ pub fn translate_locale(name: String, locale: &str) -> String {
                 && name != "powered_by_me"
             {
                 let app_name = crate::get_app_name();
-                if !app_name.contains("RustDesk") {
+                if app_name == "TANSuporte" {
+                    // TAN! Suporte: o nome interno nao tem espaco nem "!"; nos textos vai o de exibicao.
+                    s = s.replace("RustDesk", "TAN! Suporte");
+                } else if !app_name.contains("RustDesk") {
                     s = s.replace("RustDesk", &app_name);
                 } else {
                     // https://github.com/rustdesk/rustdesk-server-pro/issues/845

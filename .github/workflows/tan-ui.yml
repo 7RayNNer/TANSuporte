@@ -125,8 +125,7 @@ jobs:
           python3 ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/TANSuporte.exe
           popd
           mkdir -p ./SignOutput
-          packer=$(ls ./target/release/rustdesk-portable-packer.exe ./libs/portable/target/release/rustdesk-portable-packer.exe 2>/dev/null | head -1)
-          mv "$packer" ./SignOutput/${{ matrix.variante.exe }}-ui.exe
+          mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/${{ matrix.variante.exe }}-ui.exe
 
       - name: Upload exe
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

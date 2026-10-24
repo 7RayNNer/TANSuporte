@@ -3,12 +3,12 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
+import 'package:flutter_hbb/desktop/pages/tan_comum.dart';
 import 'package:flutter_hbb/desktop/widgets/tabbar_widget.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:get/get.dart';
 import 'package:path/path.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 import 'package:window_manager/window_manager.dart';
 
 class InstallPage extends StatefulWidget {
@@ -22,6 +22,8 @@ class _InstallPageState extends State<InstallPage> {
   final tabController = DesktopTabController(tabType: DesktopTabType.main);
 
   _InstallPageState() {
+    // TAN! Suporte: sem a barra de abas do RustDesk; a tela desenha a TanBarraTitulo.
+    stateGlobal.showTabBar.value = false;
     Get.put<DesktopTabController>(tabController);
     const label = "install";
     tabController.add(TabInfo(
@@ -87,6 +89,11 @@ class _InstallPageBodyState extends State<_InstallPageBody>
   void initState() {
     windowManager.addListener(this);
     super.initState();
+    // TAN! Suporte: a tela da TAN e compacta
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await windowManager.setSize(const Size(520, 440));
+      await windowManager.center();
+    });
   }
 
   @override
@@ -126,128 +133,144 @@ class _InstallPageBodyState extends State<_InstallPageBody>
     );
   }
 
+  // TAN! Suporte: tela propria de instalacao do acesso fixo. A logica (opcoes, caminho,
+  // install(), fechar) continua a do RustDesk; so o desenho e da TAN.
   @override
   Widget build(BuildContext context) {
-    final double em = 13;
-    final isDarkTheme = MyTheme.currentThemeMode() == ThemeMode.dark;
-    return Scaffold(
-        backgroundColor: null,
-        body: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(translate('Installation'),
-                  style: Theme.of(context).textTheme.headlineMedium),
-              Row(
-                children: [
-                  Text('${translate('Installation Path')}:')
-                      .marginOnly(right: 10),
-                  Expanded(
-                    child: TextField(
-                      controller: controller,
-                      readOnly: true,
-                      decoration: InputDecoration(
-                        contentPadding: EdgeInsets.all(0.75 * em),
-                      ),
-                    ).workaroundFreezeLinuxMint().marginOnly(right: 10),
-                  ),
-                  Obx(
-                    () => OutlinedButton.icon(
-                      icon: Icon(Icons.folder_outlined, size: 16),
-                      onPressed: btnEnabled.value ? selectInstallPath : null,
-                      style: buttonStyle,
-                      label: Text(translate('Change Path')),
-                    ),
-                  )
-                ],
-              ).marginSymmetric(vertical: 2 * em),
-              Option(startmenu, label: 'Create start menu shortcuts')
-                  .marginOnly(bottom: 7),
-              Option(desktopicon, label: 'Create desktop icon')
-                  .marginOnly(bottom: 7),
-              Option(printer, label: 'Install {$appName} Printer'),
-              Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDarkTheme
-                        ? Color.fromARGB(135, 87, 87, 90)
-                        : Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline_rounded, size: 32)
-                          .marginOnly(right: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(translate('agreement_tip'))
-                              .marginOnly(bottom: em),
-                          InkWell(
-                            hoverColor: Colors.transparent,
-                            onTap: () => launchUrlString(
-                                'https://rustdesk.com/privacy.html'),
-                            child: Tooltip(
-                              message: 'https://rustdesk.com/privacy.html',
-                              child: Row(children: [
-                                Icon(Icons.launch_outlined, size: 16)
-                                    .marginOnly(right: 5),
-                                Text(
-                                  translate('End-user license agreement'),
-                                  style: const TextStyle(
-                                      decoration: TextDecoration.underline),
-                                )
-                              ]),
+    final c = TanCores.of(context);
+    opcao(RxBool valor, String texto) => Obx(() => TanToque(
+          onTap: btnEnabled.value ? () => valor.value = !valor.value : null,
+          builder: (context, sobre) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: Row(
+              children: [
+                Icon(
+                    valor.value
+                        ? Icons.check_box_rounded
+                        : Icons.check_box_outline_blank_rounded,
+                    size: 19,
+                    color: valor.value ? c.titulo : c.dica),
+                const SizedBox(width: 9),
+                Text(texto, style: tanTexto(context, size: 13)),
+              ],
+            ),
+          ),
+        ));
+    return Container(
+      color: c.fundo,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TanBarraTitulo(maximizar: false),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: TanPainel(
+                padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const TanTitulo('Instalar acesso fixo', size: 15),
+                    const SizedBox(height: 10),
+                    Text(
+                        'Depois de instalado, o técnico da TAN! acessa este computador mesmo sem ninguém por perto, usando uma senha fixa. Ele inicia junto com o Windows e se atualiza sozinho.',
+                        style: tanTexto(context,
+                            size: 12.5, cor: c.textoVar)
+                            .copyWith(height: 1.5)),
+                    const SizedBox(height: 18),
+                    const TanRotulo('Pasta'),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 38,
+                            child: TextField(
+                              controller: controller,
+                              readOnly: true,
+                              style: tanTexto(context, size: 12.5),
+                              decoration: const InputDecoration(
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10)),
                             ),
                           ),
-                        ],
-                      )
-                    ],
-                  )).marginSymmetric(vertical: 2 * em),
-              Row(
-                children: [
-                  Expanded(
-                    // NOT use Offstage to wrap LinearProgressIndicator
-                    child: Obx(() => showProgress.value
-                        ? LinearProgressIndicator().marginOnly(right: 10)
-                        : Offstage()),
-                  ),
-                  Obx(
-                    () => OutlinedButton.icon(
-                      icon: Icon(Icons.close_rounded, size: 16),
-                      label: Text(translate('Cancel')),
-                      onPressed:
-                          btnEnabled.value ? () => windowManager.close() : null,
-                      style: buttonStyle,
-                    ).marginOnly(right: 10),
-                  ),
-                  Obx(
-                    () => ElevatedButton.icon(
-                      icon: Icon(Icons.done_rounded, size: 16),
-                      label: Text(translate('Accept and Install')),
-                      onPressed: btnEnabled.value ? install : null,
-                      style: buttonStyle,
+                        ),
+                        const SizedBox(width: 6),
+                        Obx(() => TanToque(
+                              onTap: btnEnabled.value ? selectInstallPath : null,
+                              builder: (context, sobre) => Container(
+                                height: 38,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                    color: sobre ? c.blocoSobre : c.bloco,
+                                    borderRadius: kTanRaioPeca),
+                                child: Text('Alterar',
+                                    style: tanTexto(context,
+                                        size: 12.5,
+                                        peso: FontWeight.w600,
+                                        cor: c.titulo)),
+                              ),
+                            )),
+                      ],
                     ),
-                  ),
-                  Offstage(
-                    offstage: bind.installShowRunWithoutInstall(),
-                    child: Obx(
-                      () => OutlinedButton.icon(
-                        icon: Icon(Icons.screen_share_outlined, size: 16),
-                        label: Text(translate('Run without install')),
-                        onPressed: btnEnabled.value
-                            ? () => bind.installRunWithoutInstall()
-                            : null,
-                        style: buttonStyle,
-                      ).marginOnly(left: 10),
-                    ),
-                  ),
-                ],
-              )
-            ],
-          ).paddingSymmetric(horizontal: 4 * em, vertical: 3 * em),
-        ));
+                    const SizedBox(height: 12),
+                    opcao(desktopicon, 'Atalho na área de trabalho'),
+                    opcao(startmenu, 'Atalho no menu Iniciar'),
+                    const Spacer(),
+                    Obx(() => showProgress.value
+                        ? Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: c.titulo)),
+                                const SizedBox(width: 10),
+                                Text('Instalando... o Windows vai pedir permissão.',
+                                    style: tanTexto(context,
+                                        size: 12, cor: c.textoVar)),
+                              ],
+                            ),
+                          )
+                        : const SizedBox.shrink()),
+                    Obx(() => Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TanToque(
+                              onTap: btnEnabled.value
+                                  ? () => windowManager.close()
+                                  : null,
+                              builder: (context, sobre) => Container(
+                                height: 38,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                    color: sobre ? c.blocoSobre : c.bloco,
+                                    borderRadius: kTanRaioPeca),
+                                child: Text('Cancelar',
+                                    style: tanTexto(context, size: 13)),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            TanBotao(
+                                texto: 'Instalar',
+                                icone: Icons.download_rounded,
+                                height: 38,
+                                onTap: btnEnabled.value ? install : () {}),
+                          ],
+                        )),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void install() {
