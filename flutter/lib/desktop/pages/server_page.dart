@@ -453,100 +453,73 @@ class _CmHeaderState extends State<_CmHeader>
     super.dispose();
   }
 
+  // TAN! Suporte: cabecalho da janela que o cliente ve durante o acesso, no padrao TAN.
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final c = TanCores.of(context);
+    final tipo = switch (client.type_()) {
+      ClientType.file => 'Transferência de arquivos',
+      ClientType.camera => 'Câmera',
+      ClientType.terminal => 'Terminal',
+      _ => client.portForward.isNotEmpty
+          ? 'Redirecionamento de porta'
+          : 'Acesso remoto',
+    };
+    final (corEstado, textoEstado) = !client.authorized
+        ? (c.pend, 'Quer acessar este computador')
+        : client.disconnected
+            ? (c.dica, 'Desconectado')
+            : (c.ok, 'Conectado');
     return Container(
-      // TAN! Suporte: azul cheio com o fio laranja, no lugar do degrade do RustDesk.
-      decoration: const BoxDecoration(
-        color: kTanAzul,
+      margin: const EdgeInsets.fromLTRB(4, 8, 4, 6),
+      padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
+      decoration: BoxDecoration(
+        color: c.painel,
         borderRadius: kTanRaioBloco,
-        border: Border(bottom: BorderSide(color: kTanLaranja, width: 3)),
-      ),
-      margin: EdgeInsets.symmetric(horizontal: 5.0, vertical: 10.0),
-      padding: EdgeInsets.only(
-        top: 10.0,
-        bottom: 10.0,
-        left: 10.0,
-        right: 5.0,
+        border: Border.all(color: c.linha),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildClientAvatar().marginOnly(right: 10.0),
+          _buildClientAvatar().marginOnly(right: 12.0),
           Expanded(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                FittedBox(
-                    child: Text(
-                  client.name,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
+                Text(client.name,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                  ),
-                  maxLines: 1,
-                )),
-                FittedBox(
-                  child: Text(
-                    "(${client.peerId})",
-                    style: TextStyle(color: Colors.white, fontSize: 14),
-                  ),
-                ),
-                if (client.type_() == ClientType.terminal)
-                  FittedBox(
-                    child: Text(
-                      translate("Terminal"),
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ),
-                if (client.type_() == ClientType.file)
-                  FittedBox(
-                    child: Text(
-                      translate("Transfer file"),
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ),
-                if (client.type_() == ClientType.camera)
-                  FittedBox(
-                    child: Text(
-                      translate("View camera"),
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ),
-                if (client.portForward.isNotEmpty)
-                  FittedBox(
-                    child: Text(
-                      "Port Forward: ${client.portForward}",
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ),
-                SizedBox(height: 10.0),
-                FittedBox(
-                    child: Row(
+                    style: tanTexto(context,
+                        size: 16, peso: FontWeight.w700, cor: c.titulo)),
+                const SizedBox(height: 2),
+                Text('ID ${client.peerId} · $tipo',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tanTexto(context, size: 12, cor: c.textoVar)),
+                const SizedBox(height: 10),
+                Row(
                   children: [
-                    Text(
-                      client.authorized
-                          ? client.disconnected
-                              ? translate("Disconnected")
-                              : translate("Connected")
-                          : "${translate("Request access to your device")}...",
-                      style: TextStyle(color: Colors.white),
-                    ).marginOnly(right: 8.0),
-                    if (client.authorized)
-                      Obx(
-                        () => Text(
-                          formatDurationToTime(
-                            Duration(seconds: _time.value),
-                          ),
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      )
+                    Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                            color: corEstado, shape: BoxShape.circle)),
+                    const SizedBox(width: 7),
+                    Flexible(
+                      child: Text(textoEstado,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tanTexto(context, size: 12.5)),
+                    ),
+                    if (client.authorized && !client.disconnected)
+                      Obx(() => Text(
+                            '  ·  ${formatDurationToTime(Duration(seconds: _time.value))}',
+                            style: tanTexto(context,
+                                size: 12.5, cor: c.textoVar),
+                          )),
                   ],
-                ))
+                ),
               ],
             ),
           ),
@@ -555,8 +528,15 @@ class _CmHeaderState extends State<_CmHeader>
                 (client.type_() != ClientType.remote &&
                     client.type_() != ClientType.file &&
                     client.type_() != ClientType.camera),
-            child: IconButton(
-              onPressed: () => checkClickTime(client.id, () {
+            child: TanIcone(
+              client.type_() == ClientType.file
+                  ? Icons.receipt_long_outlined
+                  : Icons.chat_bubble_outline_rounded,
+              dica: client.type_() == ClientType.file
+                  ? 'Ver os arquivos transferidos'
+                  : 'Conversar com o técnico',
+              cor: c.titulo,
+              onTap: () => checkClickTime(client.id, () {
                 if (client.type_() == ClientType.file) {
                   gFFI.chatModel.toggleCMFilePage();
                 } else {
@@ -564,10 +544,6 @@ class _CmHeaderState extends State<_CmHeader>
                       .toggleCMChatPage(MessageKey(client.peerId, client.id));
                 }
               }),
-              icon: SvgPicture.asset(client.type_() == ClientType.file
-                  ? 'assets/file_transfer.svg'
-                  : 'assets/chat2.svg'),
-              splashRadius: kDesktopIconButtonSplashRadius,
             ),
           )
         ],
@@ -581,28 +557,30 @@ class _CmHeaderState extends State<_CmHeader>
   Widget _buildClientAvatar() {
     return buildAvatarWidget(
           avatar: client.avatar,
-          size: 70,
-          borderRadius: 15,
+          size: 48,
+          borderRadius: 4,
           fallback: _buildInitialAvatar(),
         ) ??
         _buildInitialAvatar();
   }
 
+  // TAN! Suporte: inicial sobre o azul da marca (no RustDesk a cor vinha do nome).
   Widget _buildInitialAvatar() {
     return Container(
-      width: 70,
-      height: 70,
+      width: 48,
+      height: 48,
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: str2color(client.name),
-        borderRadius: BorderRadius.circular(4.0),
+      decoration: const BoxDecoration(
+        color: kTanAzul,
+        borderRadius: kTanRaioBloco,
       ),
       child: Text(
-        client.name.isNotEmpty ? client.name[0] : '?',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
+        client.name.isNotEmpty ? client.name[0].toUpperCase() : '?',
+        style: const TextStyle(
+          fontFamily: kTanFonte,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
-          fontSize: 55,
+          fontSize: 24,
         ),
       ),
     );
@@ -623,15 +601,17 @@ class _PrivilegeBoardState extends State<_PrivilegeBoard> {
   Widget buildPermissionIcon(bool enabled, IconData iconData,
       Function(bool)? onTap, String tooltipText,
       {required bool canModify}) {
+    // TAN! Suporte: ligado = bloco azul cheio; desligado = bloco chapado com icone apagado.
+    final c = TanCores.of(context);
     return Tooltip(
-      message: "$tooltipText: ${enabled ? "ON" : "OFF"}",
+      message: "$tooltipText: ${enabled ? "ligado" : "desligado"}",
       waitDuration: Duration.zero,
       child: Container(
         decoration: BoxDecoration(
           color: enabled
-              ? (canModify ? MyTheme.accent : MyTheme.accent.withOpacity(0.6))
-              : Colors.grey[700],
-          borderRadius: BorderRadius.circular(10.0),
+              ? (canModify ? c.botao : c.botao.withOpacity(0.6))
+              : c.bloco,
+          borderRadius: kTanRaioPeca,
         ),
         padding: EdgeInsets.all(8.0),
         child: InkWell(
@@ -645,7 +625,7 @@ class _PrivilegeBoardState extends State<_PrivilegeBoard> {
               Expanded(
                 child: Icon(
                   iconData,
-                  color: Colors.white,
+                  color: enabled ? c.botaoTexto : c.dica,
                 ),
               ),
             ],
@@ -665,28 +645,19 @@ class _PrivilegeBoardState extends State<_PrivilegeBoard> {
     return Container(
       width: double.infinity,
       height: 160.0,
-      margin: EdgeInsets.all(5.0),
-      padding: EdgeInsets.all(5.0),
+      // TAN! Suporte: painel com fio fino, sem sombra; titulo de secao alinhado a esquerda.
+      margin: const EdgeInsets.fromLTRB(4, 0, 4, 6),
+      padding: const EdgeInsets.fromLTRB(4, 12, 4, 6),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10.0),
-        color: Theme.of(context).colorScheme.background,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 1,
-            offset: Offset(0, 1.5),
-          ),
-        ],
+        borderRadius: kTanRaioBloco,
+        color: TanCores.of(context).painel,
+        border: Border.all(color: TanCores.of(context).linha),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            translate("Permissions"),
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ).marginOnly(left: 4.0, bottom: 8.0),
+          const TanSubtitulo('O que o técnico pode fazer')
+              .marginOnly(left: 10.0, bottom: 10.0),
           Expanded(
             child: GridView.count(
               crossAxisCount: crossAxisCount,
@@ -1006,7 +977,7 @@ class _CmControlPanel extends StatelessWidget {
         Offstage(
           offstage: !client.fromSwitch,
           child: buildButton(context,
-              color: Colors.purple,
+              color: kTanLaranja, // TAN! Suporte
               onClick: () => handleSwitchBack(context),
               icon: Icon(Icons.reply, color: Colors.white),
               text: "Switch Sides",
@@ -1143,21 +1114,23 @@ class _CmControlPanel extends StatelessWidget {
     if (icon != null) {
       textWidget = Text(
         translate(text),
-        style: TextStyle(color: textColor),
+        style: TextStyle(
+            color: textColor, fontFamily: kTanFonte, fontWeight: FontWeight.w600),
         textAlign: TextAlign.center,
       );
     } else {
       textWidget = Expanded(
         child: Text(
           translate(text),
-          style: TextStyle(color: textColor),
+          style: TextStyle(
+              color: textColor, fontFamily: kTanFonte, fontWeight: FontWeight.w600),
           textAlign: TextAlign.center,
         ),
       );
     }
     final borderRadius = BorderRadius.circular(3.0);
     final btn = Container(
-      height: 32,
+      height: 36,
       decoration: BoxDecoration(
           color: color, borderRadius: borderRadius, border: border),
       child: InkWell(

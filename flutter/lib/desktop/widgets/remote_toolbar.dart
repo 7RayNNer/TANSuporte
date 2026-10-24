@@ -17,6 +17,7 @@ import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:window_size/window_size.dart' as window_size;
 
 import '../../common.dart';
+import '../pages/tan_comum.dart';
 import '../../models/model.dart';
 import '../../models/platform_model.dart';
 import '../../common/shared_state.dart';
@@ -338,7 +339,7 @@ class _ToolbarTheme {
   static const double buttonSize = 32;
   static const double buttonHMargin = 2;
   static const double buttonVMargin = 6;
-  static const double iconRadius = 8;
+  static const double iconRadius = 3; // TAN! Suporte: canto reto
   static const double elevation = 3;
 
   static double dividerSpaceToAction = isWindows ? 8 : 14;
@@ -350,7 +351,7 @@ class _ToolbarTheme {
   static const double menuButtonBorderRadius = 3.0;
 
   static Color borderColor(BuildContext context) =>
-      MyTheme.color(context).border3 ?? MyTheme.border;
+      TanCores.of(context).linha; // TAN! Suporte
 
   static Color? dividerColor(BuildContext context) =>
       MyTheme.color(context).divider;
@@ -802,6 +803,15 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
   Widget _buildToolbar(
       BuildContext context, _ToolbarEdge edge, bool isHorizontal) {
     final List<Widget> toolbarItems = [];
+    // TAN! Suporte: logo no comeco da barra
+    toolbarItems.add(Padding(
+      padding: isHorizontal
+          ? const EdgeInsets.fromLTRB(6, 0, 4, 0)
+          : const EdgeInsets.fromLTRB(0, 6, 0, 4),
+      child: ClipRRect(
+          borderRadius: kTanRaioPeca,
+          child: SizedBox(width: 20, height: 20, child: loadIcon(20))),
+    ));
     toolbarItems.add(_PinMenu(state: widget.state));
     toolbarItems.add(Obx(() {
       final privacyModeState = PrivacyModeState.find(widget.id);
@@ -864,11 +874,7 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
       elevation: _ToolbarTheme.elevation,
       shadowColor: MyTheme.color(context).shadow,
       borderRadius: toolbarBorderRadius,
-      color: Theme.of(context)
-          .menuBarTheme
-          .style
-          ?.backgroundColor
-          ?.resolve(MaterialState.values.toSet()),
+      color: TanCores.of(context).painel, // TAN! Suporte
       child: SingleChildScrollView(
         scrollDirection: innerAxis,
         child: Theme(
@@ -1033,16 +1039,16 @@ class _MainMonitorSwitchButton extends StatelessWidget {
             children: [
               SvgPicture.asset(
                 'assets/display_switcher.svg',
-                colorFilter:
-                    const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(
+                    TanCores.of(context).titulo, BlendMode.srcIn),
                 width: _ToolbarTheme.buttonSize,
                 height: _ToolbarTheme.buttonSize,
               ),
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.black,
+                style: TextStyle(
+                  color: TanCores.of(context).painel,
                   fontSize: 11,
                   height: 1,
                   fontWeight: FontWeight.bold,
@@ -2994,6 +3000,22 @@ class _CloseMenu extends StatelessWidget {
   }
 }
 
+// TAN! Suporte: botoes da barra no padrao TAN, icone na cor do tema sobre fundo transparente
+// (bloco com o mouse em cima). Mantem o significado da cor original: vermelho = desconectar/parar,
+// cinza = desligado (ex.: alfinete solto).
+(Color, Color) _tanCoresBotao(BuildContext context, Color original, bool hover) {
+  final c = TanCores.of(context);
+  if (original == _ToolbarTheme.redColor ||
+      original == _ToolbarTheme.hoverRedColor) {
+    return (hover ? c.bad : Colors.transparent, hover ? Colors.white : c.bad);
+  }
+  if (original == _ToolbarTheme.inactiveColor ||
+      original == _ToolbarTheme.hoverInactiveColor) {
+    return (hover ? c.bloco : Colors.transparent, c.dica);
+  }
+  return (hover ? c.bloco : Colors.transparent, c.titulo);
+}
+
 class _IconMenuButton extends StatefulWidget {
   final String? assetName;
   final Widget? icon;
@@ -3029,10 +3051,11 @@ class _IconMenuButtonState extends State<_IconMenuButton> {
   @override
   Widget build(BuildContext context) {
     assert(widget.assetName != null || widget.icon != null);
+    final (fundo, corIcone) = _tanCoresBotao(context, widget.color, hover);
     final icon = widget.icon ??
         SvgPicture.asset(
           widget.assetName!,
-          colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(corIcone, BlendMode.srcIn),
           width: _ToolbarTheme.buttonSize,
           height: _ToolbarTheme.buttonSize,
         );
@@ -3056,7 +3079,7 @@ class _IconMenuButtonState extends State<_IconMenuButton> {
                     decoration: BoxDecoration(
                       borderRadius:
                           BorderRadius.circular(_ToolbarTheme.iconRadius),
-                      color: hover ? widget.hoverColor : widget.color,
+                      color: fundo,
                     ),
                     child: icon)),
           )),
@@ -3114,10 +3137,11 @@ class _IconSubmenuButtonState extends State<_IconSubmenuButton> {
   @override
   Widget build(BuildContext context) {
     assert(widget.svg != null || widget.icon != null);
+    final (fundo, corIcone) = _tanCoresBotao(context, widget.color, hover);
     final icon = widget.icon ??
         SvgPicture.asset(
           widget.svg!,
-          colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(corIcone, BlendMode.srcIn),
           width: _ToolbarTheme.buttonSize,
           height: _ToolbarTheme.buttonSize,
         );
@@ -3139,7 +3163,7 @@ class _IconSubmenuButtonState extends State<_IconSubmenuButton> {
                         decoration: BoxDecoration(
                           borderRadius:
                               BorderRadius.circular(_ToolbarTheme.iconRadius),
-                          color: hover ? widget.hoverColor : widget.color,
+                          color: fundo,
                         ),
                         child: icon))),
             menuChildren: widget
@@ -3628,11 +3652,7 @@ class _DraggableShowHideState extends State<_DraggableShowHide> {
       data: TextButtonThemeData(style: buttonStyle),
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context)
-              .menuBarTheme
-              .style
-              ?.backgroundColor
-              ?.resolve(MaterialState.values.toSet()),
+          color: TanCores.of(context).painel, // TAN! Suporte
           border: Border.all(
             color: _ToolbarTheme.borderColor(context),
             width: 1,
