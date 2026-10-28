@@ -28,7 +28,7 @@ Substitua os dois arquivos e faça commit:
 - `tan/marca/icone.png`: quadrado, 1024x1024, fundo transparente ou com o quadrado azul.
 - `tan/marca/icone.svg`: a mesma arte em vetor (aparece na tela inicial do app).
 
-Hoje: balão de chat "T!" (`icone-original.png` é o arquivo recebido, 1254px com cantos pretos; `icone.png` é o recorte com cantos transparentes; `icone.svg` embute o PNG).
+Hoje: T! de headset (quadrado azul #1E3A8A, T e headset brancos, "!" e microfone em laranja #F26522), do sistema de ícones de produto da marca (`TANWeb\docs\marca-tan\02_ICONS`). `icone.png` tem cantos transparentes; `icone.svg` é vetorial, só paths. O balão de chat "T!" passou a ser o ícone da Central de Atendimento.
 
 ## Gerar o exe
 
